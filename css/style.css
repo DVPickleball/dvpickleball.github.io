@@ -931,13 +931,18 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: var(--radius-sm);
   transition: all var(--trans-fast);
   margin-left: var(--space-sm);
-  opacity: 0.5;
-  display: inline-flex;
+  opacity: 0;
+  display: none;
   align-items: center;
   justify-content: center;
   height: 28px;
   width: 28px;
   flex-shrink: 0;
+}
+
+body.is-authenticated .delete-match-btn {
+  display: inline-flex;
+  opacity: 0.4;
 }
 
 .delete-match-btn:hover {

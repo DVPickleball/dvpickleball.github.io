@@ -73,6 +73,7 @@ DV.Auth = (function() {
 
     if (user) {
       // Logged in
+      document.body.classList.add('is-authenticated');
       if (loginBtn) loginBtn.classList.add('hidden');
       if (userMenu) userMenu.classList.remove('hidden');
       if (userEmail) userEmail.textContent = user.email;
@@ -82,6 +83,7 @@ DV.Auth = (function() {
       });
     } else {
       // Logged out
+      document.body.classList.remove('is-authenticated');
       if (loginBtn) loginBtn.classList.remove('hidden');
       if (userMenu) userMenu.classList.add('hidden');
       if (userEmail) userEmail.textContent = '';

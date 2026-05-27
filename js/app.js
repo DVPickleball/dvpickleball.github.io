@@ -26,6 +26,7 @@ DV.App = (function() {
     setupTabs();
     setupMobileMenu();
     setupUnofficialEdit();
+    setupAddPlayer();
 
     // Listen for data updates
     DV.Matches.onUpdate(function() {
@@ -39,6 +40,7 @@ DV.App = (function() {
       renderEloRankings();
       renderUnofficialRankings();
       renderPlayers();
+      populatePlayerSelects();
     });
 
     // Handle initial route
@@ -539,6 +541,48 @@ DV.App = (function() {
       });
   }
 
+  function setupAddPlayer() {
+    var form = document.getElementById('add-player-form');
+    if (!form) return;
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var input = document.getElementById('new-player-name');
+      var name = input.value.trim();
+      if (!name) return;
+
+      var btn = form.querySelector('button[type="submit"]');
+      var oldText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Adding...';
+
+      // Generate ID (lowercase, alphanumeric)
+      var id = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+      // Create empty player doc in Firestore
+      // Rankings snapshot listener will pick this up, add to DV.PLAYERS and re-render selects.
+      DV.db.collection('players').doc(id).set({
+        name: name,
+        elo: DV.DEFAULT_ELO,
+        wins: 0,
+        losses: 0,
+        matchesPlayed: 0
+      }, { merge: true })
+      .then(function() {
+        showToast('Player ' + name + ' added! 🎉', 'success');
+        input.value = '';
+        btn.disabled = false;
+        btn.textContent = oldText;
+      })
+      .catch(function(err) {
+        console.error('Error adding player:', err);
+        showToast('Error adding player.', 'error');
+        btn.disabled = false;
+        btn.textContent = oldText;
+      });
+    });
+  }
+
 
   /* ---- Render: Dashboard ---- */
 
@@ -779,10 +823,9 @@ DV.App = (function() {
       '<span class="match-score">' + scoreStr + '</span>' +
       eloHTML;
 
-    // Delete button (auth-only)
-    var isAuth = DV.Auth.isLoggedIn();
+    // Delete button (CSS handles auth visibility via body.is-authenticated)
     var deleteBtn = document.createElement('button');
-    deleteBtn.className = 'delete-match-btn auth-only' + (isAuth ? '' : ' hidden');
+    deleteBtn.className = 'delete-match-btn';
     deleteBtn.title = 'Delete Match';
     deleteBtn.innerHTML = '×';
     deleteBtn.addEventListener('click', function(e) {

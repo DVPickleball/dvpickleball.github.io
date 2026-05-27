@@ -25,6 +25,11 @@ DV.Rankings = (function() {
           var data = doc.data();
           data.id = doc.id;
           playersCache.push(data);
+
+          // Auto-register Firestore players not in the hardcoded roster
+          if (data.name) {
+            DV.addPlayer(doc.id, data.name);
+          }
         });
 
         // Add any players who haven't played yet

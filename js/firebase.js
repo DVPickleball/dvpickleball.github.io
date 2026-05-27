@@ -56,16 +56,17 @@ DV.PLAYERS.forEach(function(p) {
   DV.PLAYER_MAP[p.id] = p;
 });
 
-// Avatar color palette (consistent per player)
+// Avatar color palette (wraps around for dynamic players)
 DV.AVATAR_COLORS = [
   '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e',
   '#f97316', '#eab308', '#22c55e', '#14b8a6',
-  '#06b6d4', '#3b82f6'
+  '#06b6d4', '#3b82f6', '#a855f7', '#0ea5e9'
 ];
 
 DV.getAvatarColor = function(playerId) {
   var idx = DV.PLAYERS.findIndex(function(p) { return p.id === playerId; });
-  return DV.AVATAR_COLORS[idx >= 0 ? idx : 0];
+  if (idx < 0) idx = 0;
+  return DV.AVATAR_COLORS[idx % DV.AVATAR_COLORS.length];
 };
 
 DV.getInitials = function(name) {
@@ -78,6 +79,14 @@ DV.getPlayerName = function(playerId) {
 };
 
 // Default ELO
-DV.DEFAULT_ELO = 1200;
+DV.DEFAULT_ELO = 0;
+
+// Dynamically add a player to the local roster
+DV.addPlayer = function(id, name) {
+  if (DV.PLAYER_MAP[id]) return; // already exists
+  var player = { id: id, name: name };
+  DV.PLAYERS.push(player);
+  DV.PLAYER_MAP[id] = player;
+};
 
 console.log('🏓 DV Pickleball — Firebase initialized');
