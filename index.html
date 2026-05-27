@@ -204,10 +204,15 @@
       <div class="container">
         <div class="section-header">
           <h1 class="section-title">Match Center</h1>
-          <button id="log-match-btn" class="btn btn-accent auth-only hidden">
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Log Match
-          </button>
+          <div style="display: flex; gap: var(--space-sm); align-items: center;">
+            <button id="recalc-ratings-btn" class="btn btn-ghost btn-sm auth-only hidden" title="Recalculate ELO and stats from scratch">
+              🔄 Recalc Ratings
+            </button>
+            <button id="log-match-btn" class="btn btn-accent auth-only hidden">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Log Match
+            </button>
+          </div>
         </div>
 
         <!-- Log Match Form -->

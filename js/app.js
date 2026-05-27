@@ -233,6 +233,28 @@ DV.App = (function() {
     var closeBtn = document.getElementById('close-match-form');
     var form = document.getElementById('match-form');
     var formContainer = document.getElementById('log-match-form');
+    var recalcBtn = document.getElementById('recalc-ratings-btn');
+
+    if (recalcBtn) {
+      recalcBtn.addEventListener('click', function() {
+        if (confirm('Are you sure you want to recalculate all ELO ratings and stats? This will process all matches in chronological order and repair the database.')) {
+          recalcBtn.disabled = true;
+          recalcBtn.textContent = 'Recalculating...';
+          DV.Matches.recalculateRatings()
+            .then(function() {
+              showToast('ELO ratings and stats successfully recalculated! 🔄', 'success');
+            })
+            .catch(function(err) {
+              console.error('Recalculation failed:', err);
+              showToast('Recalculation failed: ' + err.message, 'error');
+            })
+            .finally(function() {
+              recalcBtn.disabled = false;
+              recalcBtn.textContent = '🔄 Recalc Ratings';
+            });
+        }
+      });
+    }
 
     // Toggle form visibility
     if (logBtn) {
