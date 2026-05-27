@@ -10,12 +10,13 @@ window.DV = window.DV || {};
 //     Copy the firebaseConfig object and paste it below.
 // ============================================================
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCFOcW0DndWmUoKC45SD4JCKakoKrI7YtA",
+  authDomain: "dvpickleball-7f87b.firebaseapp.com",
+  projectId: "dvpickleball-7f87b",
+  storageBucket: "dvpickleball-7f87b.firebasestorage.app",
+  messagingSenderId: "225455324052",
+  appId: "1:225455324052:web:ed52b102e0af2e9eac2d81",
+  measurementId: "G-0HB9RHVCZ5"
 };
 
 // Initialize Firebase
