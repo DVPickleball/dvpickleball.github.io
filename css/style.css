@@ -937,6 +937,7 @@ h1, h2, h3, h4, h5, h6 {
   justify-content: center;
   height: 28px;
   width: 28px;
+  flex-shrink: 0;
 }
 
 .delete-match-btn:hover {
