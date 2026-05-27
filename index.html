@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="DV Pickleball — Official league rankings, ELO tracker, match history, and player stats.">
+  <title>DV Pickleball | League Rankings & Match Tracker</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Favicon (pickle emoji) -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏓</text></svg>">
+</head>
+<body>
+
+  <!-- ====== LOADING SCREEN ====== -->
+  <div id="loading-screen" class="loading-screen">
+    <div class="loading-content">
+      <div class="loading-logo">DV</div>
+      <div class="loading-text">PICKLEBALL</div>
+      <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+    </div>
+  </div>
+
+  <!-- ====== NAVIGATION ====== -->
+  <nav id="main-nav" class="nav">
+    <div class="nav-inner">
+      <a href="#dashboard" class="nav-brand">
+        <span class="nav-brand-icon">🏓</span>
+        <span class="nav-brand-text">DV<span class="nav-brand-accent">PICKLE</span></span>
+      </a>
+
+      <div class="nav-links" id="nav-links">
+        <a href="#dashboard" class="nav-link active" data-page="dashboard">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span>Dashboard</span>
+        </a>
+        <a href="#rankings" class="nav-link" data-page="rankings">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+          <span>Rankings</span>
+        </a>
+        <a href="#matches" class="nav-link" data-page="matches">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span>Matches</span>
+        </a>
+        <a href="#players" class="nav-link" data-page="players">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span>Players</span>
+        </a>
+      </div>
+
+      <div class="nav-auth">
+        <button id="login-btn" class="btn btn-accent btn-sm">Sign In</button>
+        <div id="user-menu" class="user-menu hidden">
+          <span id="user-email" class="user-email"></span>
+          <button id="logout-btn" class="btn btn-ghost btn-sm">Sign Out</button>
+        </div>
+      </div>
+
+      <button id="mobile-menu-btn" class="mobile-menu-btn">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ====== MAIN CONTENT ====== -->
+  <main id="main-content" class="main-content">
+
+    <!-- ===== DASHBOARD ===== -->
+    <section id="page-dashboard" class="page active">
+      <div class="container">
+
+        <!-- Hero -->
+        <div class="hero">
+          <div class="hero-bg"></div>
+          <div class="hero-content">
+            <h1 class="hero-title">DV <span class="text-accent">PICKLEBALL</span></h1>
+            <p class="hero-subtitle">Where friendships go to die.</p>
+            <div class="hero-divider"></div>
+          </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+          <div class="stat-card">
+            <span class="stat-number" id="stat-matches">0</span>
+            <span class="stat-label">Matches</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-number" id="stat-players">10</span>
+            <span class="stat-label">Players</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-number" id="stat-top-elo">1200</span>
+            <span class="stat-label">Top ELO</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-number" id="stat-streak">—</span>
+            <span class="stat-label">Longest Streak</span>
+          </div>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+          <!-- Recent Matches -->
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Recent Matches</h2>
+              <a href="#matches" class="card-link">View All →</a>
+            </div>
+            <div id="recent-matches-list" class="match-list">
+              <div class="empty-state">
+                <span class="empty-icon">🏓</span>
+                <p>No matches yet. Time to play!</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Top Rankings -->
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Top Rankings</h2>
+              <a href="#rankings" class="card-link">Full Leaderboard →</a>
+            </div>
+            <div id="top-rankings-list" class="rankings-preview">
+              <div class="empty-state">
+                <span class="empty-icon">🏆</span>
+                <p>Rankings appear after matches.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===== RANKINGS ===== -->
+    <section id="page-rankings" class="page">
+      <div class="container">
+        <div class="section-header">
+          <h1 class="section-title">Rankings</h1>
+          <div class="tab-bar">
+            <button class="tab active" data-tab="elo">ELO Rankings</button>
+            <button class="tab" data-tab="unofficial">Unofficial Rankings</button>
+          </div>
+        </div>
+
+        <!-- ELO Rankings Tab -->
+        <div id="tab-elo" class="tab-content active">
+          <div class="card">
+            <div class="table-responsive">
+              <table class="data-table" id="elo-table">
+                <thead>
+                  <tr>
+                    <th class="th-rank">#</th>
+                    <th class="th-player">Player</th>
+                    <th class="th-elo">ELO</th>
+                    <th class="th-record">Record</th>
+                    <th class="th-winrate">Win %</th>
+                    <th class="th-trend">Trend</th>
+                  </tr>
+                </thead>
+                <tbody id="elo-table-body">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Unofficial Rankings Tab -->
+        <div id="tab-unofficial" class="tab-content">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Committee Power Rankings</h2>
+              <p class="card-subtitle">Pre-season rankings by the committee. Will be replaced by ELO once matches start.</p>
+            </div>
+            <div id="unofficial-rankings-list" class="unofficial-list">
+              <!-- Populated by JS -->
+            </div>
+            <div id="unofficial-edit" class="unofficial-edit hidden">
+              <h3 class="edit-title">Edit Rankings</h3>
+              <p class="edit-hint">Drag to reorder, or use the arrows.</p>
+              <div id="unofficial-edit-list" class="sortable-list"></div>
+              <div class="edit-actions">
+                <button id="save-unofficial-btn" class="btn btn-accent">Save Rankings</button>
+                <button id="cancel-unofficial-btn" class="btn btn-ghost">Cancel</button>
+              </div>
+            </div>
+            <button id="edit-unofficial-btn" class="btn btn-outline btn-sm auth-only hidden" style="margin-top:var(--space-md)">Edit Rankings</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== MATCHES ===== -->
+    <section id="page-matches" class="page">
+      <div class="container">
+        <div class="section-header">
+          <h1 class="section-title">Match Center</h1>
+          <button id="log-match-btn" class="btn btn-accent auth-only hidden">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Log Match
+          </button>
+        </div>
+
+        <!-- Log Match Form -->
+        <div id="log-match-form" class="card match-form hidden">
+          <div class="card-header">
+            <h2 class="card-title">Log a Match</h2>
+            <button id="close-match-form" class="btn-close">&times;</button>
+          </div>
+
+          <form id="match-form">
+            <!-- Match Type -->
+            <div class="form-group">
+              <label class="form-label">Match Type</label>
+              <div class="toggle-group">
+                <button type="button" class="toggle active" data-type="doubles">Doubles (2v2)</button>
+                <button type="button" class="toggle" data-type="singles">Singles (1v1)</button>
+              </div>
+            </div>
+
+            <!-- Teams -->
+            <div class="teams-container">
+              <div class="team-section">
+                <h3 class="team-label">Team 1</h3>
+                <div class="form-group">
+                  <select id="t1p1" class="form-select" required>
+                    <option value="">Select Player</option>
+                  </select>
+                </div>
+                <div class="form-group doubles-only">
+                  <select id="t1p2" class="form-select">
+                    <option value="">Select Partner</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="vs-badge">VS</div>
+
+              <div class="team-section">
+                <h3 class="team-label">Team 2</h3>
+                <div class="form-group">
+                  <select id="t2p1" class="form-select" required>
+                    <option value="">Select Player</option>
+                  </select>
+                </div>
+                <div class="form-group doubles-only">
+                  <select id="t2p2" class="form-select">
+                    <option value="">Select Partner</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Scores -->
+            <div class="scores-container">
+              <h3 class="form-label">Scores</h3>
+              <div class="score-games">
+                <div class="score-game">
+                  <span class="game-label">Game 1</span>
+                  <div class="score-inputs">
+                    <input type="number" id="g1t1" class="form-input score-input" min="0" max="99" placeholder="T1" required>
+                    <span class="score-dash">–</span>
+                    <input type="number" id="g1t2" class="form-input score-input" min="0" max="99" placeholder="T2" required>
+                  </div>
+                </div>
+                <div class="score-game">
+                  <span class="game-label">Game 2</span>
+                  <div class="score-inputs">
+                    <input type="number" id="g2t1" class="form-input score-input" min="0" max="99" placeholder="T1">
+                    <span class="score-dash">–</span>
+                    <input type="number" id="g2t2" class="form-input score-input" min="0" max="99" placeholder="T2">
+                  </div>
+                </div>
+                <div class="score-game">
+                  <span class="game-label">Game 3</span>
+                  <div class="score-inputs">
+                    <input type="number" id="g3t1" class="form-input score-input" min="0" max="99" placeholder="T1">
+                    <span class="score-dash">–</span>
+                    <input type="number" id="g3t2" class="form-input score-input" min="0" max="99" placeholder="T2">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Winner -->
+            <div class="form-group">
+              <label class="form-label">Winner</label>
+              <div class="toggle-group">
+                <button type="button" class="toggle winner-toggle" data-winner="team1">Team 1</button>
+                <button type="button" class="toggle winner-toggle" data-winner="team2">Team 2</button>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" id="submit-match-btn" class="btn btn-accent btn-lg">Submit Match</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Match History -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Match History</h2>
+            <div class="filter-group">
+              <select id="match-filter-player" class="form-select form-select-sm">
+                <option value="">All Players</option>
+              </select>
+            </div>
+          </div>
+          <div id="match-history-list" class="match-list">
+            <div class="empty-state">
+              <span class="empty-icon">📋</span>
+              <p>No matches recorded yet.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PLAYERS ===== -->
+    <section id="page-players" class="page">
+      <div class="container">
+        <div class="section-header">
+          <h1 class="section-title">Players</h1>
+        </div>
+
+        <div id="players-grid" class="players-grid">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Player Detail Panel -->
+        <div id="player-detail" class="player-detail hidden">
+          <div class="card">
+            <button id="close-player-detail" class="btn-close">&times;</button>
+            <div class="player-detail-header">
+              <div class="player-avatar-lg" id="detail-avatar"></div>
+              <div class="player-detail-info">
+                <h2 id="detail-name" class="player-detail-name"></h2>
+                <div class="player-detail-badges">
+                  <span class="badge badge-elo" id="detail-elo">1200 ELO</span>
+                  <span class="badge badge-rank" id="detail-rank">#—</span>
+                </div>
+              </div>
+            </div>
+            <div class="player-detail-stats" id="detail-stats">
+              <!-- Stat tiles populated by JS -->
+            </div>
+            <div class="player-detail-section">
+              <h3>Recent Matches</h3>
+              <div id="detail-matches" class="match-list match-list-compact"></div>
+            </div>
+            <div class="player-detail-section">
+              <h3>Head-to-Head</h3>
+              <div id="detail-h2h" class="h2h-grid"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ====== LOGIN MODAL ====== -->
+  <div id="login-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <button class="modal-close" id="close-login-modal">&times;</button>
+      <div class="modal-icon">🏓</div>
+      <h2 class="modal-title">Sign In</h2>
+      <p class="modal-subtitle">Enter your credentials to log matches and edit rankings.</p>
+      <form id="login-form">
+        <div class="form-group">
+          <label class="form-label" for="login-email">Email</label>
+          <input type="email" id="login-email" class="form-input" placeholder="your@email.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="login-password">Password</label>
+          <input type="password" id="login-password" class="form-input" placeholder="••••••••" required>
+        </div>
+        <div id="login-error" class="form-error hidden"></div>
+        <button type="submit" class="btn btn-accent btn-lg btn-full">Sign In</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====== TOAST NOTIFICATIONS ====== -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- ====== FIREBASE SDK (Compat) ====== -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
+  <!-- ====== APP SCRIPTS (order matters) ====== -->
+  <script src="js/firebase.js"></script>
+  <script src="js/elo.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/matches.js"></script>
+  <script src="js/rankings.js"></script>
+  <script src="js/stats.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
