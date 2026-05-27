@@ -46,7 +46,8 @@ DV.PLAYERS = [
   { id: 'murat',   name: 'Murat' },
   { id: 'joey',    name: 'Joey' },
   { id: 'eric',    name: 'Eric' },
-  { id: 'grant',   name: 'Grant' }
+  { id: 'grant',   name: 'Grant' },
+  { id: 'jaxson',  name: 'Jaxson' }
 ];
 
 // Quick lookup by ID
