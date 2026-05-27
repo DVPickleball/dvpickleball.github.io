@@ -951,6 +951,37 @@ body.is-authenticated .delete-match-btn {
   transform: scale(1.15);
 }
 
+.delete-player-btn {
+  background: transparent;
+  border: none;
+  color: var(--danger);
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+  border-radius: var(--radius-sm);
+  transition: all var(--trans-fast);
+  opacity: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  width: 28px;
+  position: absolute;
+  top: var(--space-xs);
+  right: var(--space-xs);
+}
+
+body.is-authenticated .delete-player-btn {
+  display: flex;
+  opacity: 0.4;
+}
+
+.delete-player-btn:hover {
+  background: var(--danger-dim);
+  opacity: 1;
+  transform: scale(1.15);
+}
+
 
 /* ---- Match Form ---- */
 

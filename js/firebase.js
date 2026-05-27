@@ -89,4 +89,10 @@ DV.addPlayer = function(id, name) {
   DV.PLAYER_MAP[id] = player;
 };
 
+// Remove a player from the local roster
+DV.removePlayer = function(id) {
+  DV.PLAYERS = DV.PLAYERS.filter(function(p) { return p.id !== id; });
+  delete DV.PLAYER_MAP[id];
+};
+
 console.log('🏓 DV Pickleball — Firebase initialized');

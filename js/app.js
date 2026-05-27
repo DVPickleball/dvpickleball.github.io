@@ -881,6 +881,32 @@ DV.App = (function() {
         showPlayerDetail(player.id);
       });
 
+      // Delete button (CSS handles auth visibility via body.is-authenticated)
+      var deleteBtn = document.createElement('button');
+      deleteBtn.className = 'delete-player-btn';
+      deleteBtn.title = 'Delete Player';
+      deleteBtn.innerHTML = '×';
+      deleteBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (confirm('Are you sure you want to delete ' + (player.name || DV.getPlayerName(player.id)) + '?')) {
+          deleteBtn.disabled = true;
+          deleteBtn.textContent = '...';
+          DV.db.collection('players').doc(player.id).delete()
+            .then(function() {
+              DV.removePlayer(player.id);
+              showToast('Player deleted.', 'info');
+              // The rankings snapshot listener will naturally cause a re-render.
+            })
+            .catch(function(err) {
+              console.error('Error deleting player:', err);
+              showToast('Error deleting player: ' + err.message, 'error');
+              deleteBtn.disabled = false;
+              deleteBtn.innerHTML = '×';
+            });
+        }
+      });
+      card.appendChild(deleteBtn);
+
       container.appendChild(card);
     });
   }
