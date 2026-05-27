@@ -757,6 +757,31 @@ DV.App = (function() {
       '<span class="match-score">' + scoreStr + '</span>' +
       eloHTML;
 
+    // Delete button (auth-only)
+    var isAuth = DV.Auth.isLoggedIn();
+    var deleteBtn = document.createElement('button');
+    deleteBtn.className = 'delete-match-btn auth-only' + (isAuth ? '' : ' hidden');
+    deleteBtn.title = 'Delete Match';
+    deleteBtn.innerHTML = '×';
+    deleteBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (confirm('Are you sure you want to delete this match? This will revert the ELO ratings and stats for all players in this match.')) {
+        deleteBtn.disabled = true;
+        deleteBtn.textContent = '...';
+        DV.Matches.deleteMatch(match.id)
+          .then(function() {
+            showToast('Match deleted and ELOs reverted. 🗑️', 'info');
+          })
+          .catch(function(err) {
+            console.error('Error deleting match:', err);
+            showToast('Error deleting match: ' + err.message, 'error');
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = '×';
+          });
+      }
+    });
+    item.appendChild(deleteBtn);
+
     return item;
   }
 

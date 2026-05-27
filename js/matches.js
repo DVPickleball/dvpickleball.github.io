@@ -130,10 +130,42 @@ DV.Matches = (function() {
   }
 
   /**
-   * Delete a match (for corrections)
+   * Delete a match and revert its ELO and stats changes
    */
   function deleteMatch(matchId) {
-    return DV.db.collection('matches').doc(matchId).delete();
+    var matchRef = DV.db.collection('matches').doc(matchId);
+    return matchRef.get().then(function(doc) {
+      if (!doc.exists) {
+        throw new Error('Match does not exist');
+      }
+      var matchData = doc.data();
+      var eloChanges = matchData.eloChanges || {};
+      var allPlayers = matchData.team1.concat(matchData.team2);
+
+      var batch = DV.db.batch();
+
+      // Delete the match document
+      batch.delete(matchRef);
+
+      // Revert player ELOs and stats
+      allPlayers.forEach(function(playerId) {
+        var playerRef = DV.db.collection('players').doc(playerId);
+        var isWinner = matchData.winner === 'team1'
+          ? matchData.team1.indexOf(playerId) >= 0
+          : matchData.team2.indexOf(playerId) >= 0;
+
+        var eloCorrection = -(eloChanges[playerId] || 0);
+
+        batch.set(playerRef, {
+          elo: firebase.firestore.FieldValue.increment(eloCorrection),
+          wins: firebase.firestore.FieldValue.increment(isWinner ? -1 : 0),
+          losses: firebase.firestore.FieldValue.increment(isWinner ? 0 : -1),
+          matchesPlayed: firebase.firestore.FieldValue.increment(-1)
+        }, { merge: true });
+      });
+
+      return batch.commit();
+    });
   }
 
   /**

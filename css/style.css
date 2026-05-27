@@ -920,6 +920,31 @@ h1, h2, h3, h4, h5, h6 {
   padding: var(--space-sm) var(--space-md);
 }
 
+.delete-match-btn {
+  background: transparent;
+  border: none;
+  color: var(--danger);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0 var(--space-xs);
+  line-height: 1;
+  border-radius: var(--radius-sm);
+  transition: all var(--trans-fast);
+  margin-left: var(--space-sm);
+  opacity: 0.5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  width: 28px;
+}
+
+.delete-match-btn:hover {
+  background: var(--danger-dim);
+  opacity: 1;
+  transform: scale(1.15);
+}
+
 
 /* ---- Match Form ---- */
 
