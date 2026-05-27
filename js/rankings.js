@@ -64,6 +64,8 @@ DV.Rankings = (function() {
           // Initialize with default ordering
           unofficialCache = getDefaultUnofficial();
         }
+        // Notify UI to re-render
+        notifyListeners(playersCache);
       }, function(err) {
         console.error('Unofficial rankings listener error:', err);
       });

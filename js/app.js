@@ -473,7 +473,18 @@ DV.App = (function() {
     if (!container) return;
 
     var current = DV.Rankings.getUnofficialRankings();
-    editOrder = current.rankings.map(function(r) { return r.playerId; });
+    
+    // Filter out deleted players
+    editOrder = current.rankings
+      .map(function(r) { return r.playerId; })
+      .filter(function(id) { return !!DV.PLAYER_MAP[id]; });
+
+    // Append new players that aren't in the saved list yet
+    DV.PLAYERS.forEach(function(p) {
+      if (editOrder.indexOf(p.id) === -1) {
+        editOrder.push(p.id);
+      }
+    });
 
     renderEditItems(container);
   }
@@ -724,7 +735,19 @@ DV.App = (function() {
     if (!container) return;
 
     var data = DV.Rankings.getUnofficialRankings();
-    var rankings = data.rankings || [];
+    
+    // Build rankings list: start with saved, filter deleted
+    var rankings = (data.rankings || []).filter(function(r) {
+      return !!DV.PLAYER_MAP[r.playerId];
+    });
+
+    // Append any new players not in the saved rankings
+    DV.PLAYERS.forEach(function(p) {
+      var exists = rankings.some(function(r) { return r.playerId === p.id; });
+      if (!exists) {
+        rankings.push({ playerId: p.id, rank: rankings.length + 1, comment: '' });
+      }
+    });
 
     container.innerHTML = '';
     rankings.forEach(function(r, i) {
