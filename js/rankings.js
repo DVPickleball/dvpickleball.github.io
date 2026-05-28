@@ -12,6 +12,31 @@ DV.Rankings = (function() {
   var playerListeners = [];
   var unsubPlayers = null;
   var unsubUnofficial = null;
+  var activeRankingType = 'doubles'; // 'doubles' or 'singles'
+
+  function setRankingType(type) {
+    if (activeRankingType !== type) {
+      activeRankingType = type;
+      sortPlayersCache();
+      notifyListeners(playersCache);
+    }
+  }
+
+  function getRankingType() {
+    return activeRankingType;
+  }
+
+  function sortPlayersCache() {
+    playersCache.sort(function(a, b) {
+      var eloA = activeRankingType === 'singles' 
+        ? (a.eloSingles !== undefined ? a.eloSingles : DV.DEFAULT_ELO) 
+        : (a.eloDoubles !== undefined ? a.eloDoubles : (a.elo !== undefined ? a.elo : DV.DEFAULT_ELO));
+      var eloB = activeRankingType === 'singles' 
+        ? (b.eloSingles !== undefined ? b.eloSingles : DV.DEFAULT_ELO) 
+        : (b.eloDoubles !== undefined ? b.eloDoubles : (b.elo !== undefined ? b.elo : DV.DEFAULT_ELO));
+      return eloB - eloA;
+    });
+  }
 
   /**
    * Initialize real-time listeners
@@ -39,16 +64,17 @@ DV.Rankings = (function() {
             playersCache.push({
               id: p.id,
               name: p.name,
-              elo: DV.DEFAULT_ELO,
-              wins: 0,
-              losses: 0,
-              matchesPlayed: 0
+              eloDoubles: DV.DEFAULT_ELO,
+              eloSingles: DV.DEFAULT_ELO,
+              winsDoubles: 0, lossesDoubles: 0, matchesPlayedDoubles: 0,
+              winsSingles: 0, lossesSingles: 0, matchesPlayedSingles: 0,
+              wins: 0, losses: 0, matchesPlayed: 0
             });
           }
         });
 
-        // Sort by ELO descending
-        playersCache.sort(function(a, b) { return (b.elo || DV.DEFAULT_ELO) - (a.elo || DV.DEFAULT_ELO); });
+        // Sort by selected ELO descending
+        sortPlayersCache();
 
         notifyListeners(playersCache);
       }, function(err) {
@@ -135,16 +161,19 @@ DV.Rankings = (function() {
    * Get win rate for a player
    */
   function getWinRate(player) {
-    var total = (player.wins || 0) + (player.losses || 0);
+    var wins = activeRankingType === 'singles' ? (player.winsSingles || 0) : (player.winsDoubles || 0);
+    var losses = activeRankingType === 'singles' ? (player.lossesSingles || 0) : (player.lossesDoubles || 0);
+    var total = wins + losses;
     if (total === 0) return 0;
-    return Math.round(((player.wins || 0) / total) * 100);
+    return Math.round((wins / total) * 100);
   }
 
   /**
    * Get trend indicator for a player (based on last match ELO change)
    */
   function getTrend(playerId) {
-    var matches = DV.Matches.getByPlayer(playerId);
+    // Filter matches by activeRankingType to only consider trends for the active type
+    var matches = DV.Matches.getByPlayer(playerId).filter(function(m) { return m.type === activeRankingType; });
     if (matches.length === 0) return { direction: 'new', change: 0 };
 
     var lastMatch = matches[0]; // already sorted desc
@@ -174,7 +203,10 @@ DV.Rankings = (function() {
    */
   function getTopElo() {
     if (playersCache.length === 0) return DV.DEFAULT_ELO;
-    return playersCache[0].elo || DV.DEFAULT_ELO;
+    var topP = playersCache[0];
+    return activeRankingType === 'singles' 
+      ? (topP.eloSingles !== undefined ? topP.eloSingles : DV.DEFAULT_ELO) 
+      : (topP.eloDoubles !== undefined ? topP.eloDoubles : (topP.elo !== undefined ? topP.elo : DV.DEFAULT_ELO));
   }
 
   /**
@@ -203,7 +235,9 @@ DV.Rankings = (function() {
     getTop: getTop,
     getActivePlayerCount: getActivePlayerCount,
     getTopElo: getTopElo,
-    onUpdate: onUpdate
+    onUpdate: onUpdate,
+    setRankingType: setRankingType,
+    getRankingType: getRankingType
   };
 
 })();

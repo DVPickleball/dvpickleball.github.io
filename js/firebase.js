@@ -79,7 +79,7 @@ DV.getPlayerName = function(playerId) {
 };
 
 // Default ELO
-DV.DEFAULT_ELO = 0;
+DV.DEFAULT_ELO = 1500;
 
 // Dynamically add a player to the local roster
 DV.addPlayer = function(id, name) {

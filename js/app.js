@@ -27,6 +27,7 @@ DV.App = (function() {
     setupMobileMenu();
     setupUnofficialEdit();
     setupAddPlayer();
+    setupRankingToggles();
 
     // Listen for data updates
     DV.Matches.onUpdate(function() {
@@ -202,7 +203,7 @@ DV.App = (function() {
   }
 
 
-  /* ---- Tabs ---- */
+  /* ---- Tabs & Toggles ---- */
 
   function setupTabs() {
     document.querySelectorAll('.tab').forEach(function(tab) {
@@ -225,6 +226,24 @@ DV.App = (function() {
         if (content) content.classList.add('active');
       });
     });
+  }
+
+  function setupRankingToggles() {
+    var doublesBtn = document.getElementById('ranking-type-doubles');
+    var singlesBtn = document.getElementById('ranking-type-singles');
+
+    if (doublesBtn && singlesBtn) {
+      doublesBtn.addEventListener('click', function() {
+        doublesBtn.classList.add('active');
+        singlesBtn.classList.remove('active');
+        DV.Rankings.setRankingType('doubles');
+      });
+      singlesBtn.addEventListener('click', function() {
+        singlesBtn.classList.add('active');
+        doublesBtn.classList.remove('active');
+        DV.Rankings.setRankingType('singles');
+      });
+    }
   }
 
 
@@ -659,13 +678,18 @@ DV.App = (function() {
       var item = document.createElement('div');
       item.className = 'rank-preview-item animate-in stagger-' + (i + 1);
       var posColor = i === 0 ? 'var(--gold)' : i === 1 ? 'var(--silver)' : i === 2 ? 'var(--bronze)' : 'var(--text-muted)';
+      var rType = DV.Rankings.getRankingType();
+      var elo = rType === 'singles' 
+        ? (player.eloSingles !== undefined ? player.eloSingles : DV.DEFAULT_ELO) 
+        : (player.eloDoubles !== undefined ? player.eloDoubles : (player.elo !== undefined ? player.elo : DV.DEFAULT_ELO));
+
       item.innerHTML =
         '<span class="rank-preview-pos" style="color:' + posColor + '">' + (i + 1) + '</span>' +
         '<div class="player-avatar" style="background:' + DV.getAvatarColor(player.id) + ';color:#fff">' +
           DV.getInitials(player.name || DV.getPlayerName(player.id)) +
         '</div>' +
         '<span class="rank-preview-name">' + (player.name || DV.getPlayerName(player.id)) + '</span>' +
-        '<span class="rank-preview-elo">' + (player.elo || DV.DEFAULT_ELO) + '</span>';
+        '<span class="rank-preview-elo">' + elo + '</span>';
       container.appendChild(item);
     });
   }
@@ -708,6 +732,11 @@ DV.App = (function() {
         window.location.hash = 'players';
       });
 
+      var rType = DV.Rankings.getRankingType();
+      var elo = rType === 'singles' 
+        ? (player.eloSingles !== undefined ? player.eloSingles : DV.DEFAULT_ELO) 
+        : (player.eloDoubles !== undefined ? player.eloDoubles : (player.elo !== undefined ? player.elo : DV.DEFAULT_ELO));
+
       tr.innerHTML =
         '<td class="th-rank"><span class="rank-badge ' + rankClass + '">' + rank + '</span></td>' +
         '<td>' +
@@ -718,7 +747,7 @@ DV.App = (function() {
             '<span>' + (player.name || DV.getPlayerName(player.id)) + '</span>' +
           '</div>' +
         '</td>' +
-        '<td><span class="elo-value">' + (player.elo || DV.DEFAULT_ELO) + '</span></td>' +
+        '<td><span class="elo-value">' + elo + '</span></td>' +
         '<td>' + wins + '–' + losses + '</td>' +
         '<td><span class="win-rate">' + winRate + '%</span></td>' +
         '<td class="th-trend">' + trendHTML + '</td>';
@@ -890,7 +919,10 @@ DV.App = (function() {
 
       var wins = player.wins || 0;
       var losses = player.losses || 0;
-      var elo = player.elo || DV.DEFAULT_ELO;
+      var rType = DV.Rankings.getRankingType();
+      var elo = rType === 'singles' 
+        ? (player.eloSingles !== undefined ? player.eloSingles : DV.DEFAULT_ELO) 
+        : (player.eloDoubles !== undefined ? player.eloDoubles : (player.elo !== undefined ? player.elo : DV.DEFAULT_ELO));
 
       card.innerHTML =
         '<div class="player-avatar-lg" style="background:' + DV.getAvatarColor(player.id) + ';color:#fff">' +
@@ -954,20 +986,28 @@ DV.App = (function() {
 
     // Name & badges
     setText('detail-name', player.name || DV.getPlayerName(playerId));
-    setText('detail-elo', stats.elo + ' ELO');
-    setText('detail-rank', '#' + stats.rank);
+    var eloDbl = (player.eloDoubles !== undefined ? player.eloDoubles : (player.elo !== undefined ? player.elo : DV.DEFAULT_ELO));
+    var eloSgl = (player.eloSingles !== undefined ? player.eloSingles : DV.DEFAULT_ELO);
+    setText('detail-elo-doubles', eloDbl + ' Doubles');
+    setText('detail-elo-singles', eloSgl + ' Singles');
 
     // Stats tiles
     var statsContainer = document.getElementById('detail-stats');
     if (statsContainer) {
       statsContainer.innerHTML = '';
+      
+      // Determine what to show in tiles based on active view, or show combined?
+      // Since it's a general player view, showing combined winrate might be best, 
+      // but the user's focus is on separating them. 
+      // For now we use the aggregated total stats that are returned by DV.Stats.getPlayerStats
+      
       var tiles = [
-        { value: stats.elo, label: 'ELO Rating' },
-        { value: stats.wins + '–' + stats.losses, label: 'Record' },
-        { value: stats.winRate + '%', label: 'Win Rate' },
-        { value: stats.matchesPlayed, label: 'Matches' },
+        { value: eloDbl, label: 'Doubles ELO' },
+        { value: eloSgl, label: 'Singles ELO' },
+        { value: stats.wins + '–' + stats.losses, label: 'Total Record' },
+        { value: stats.winRate + '%', label: 'Total Win Rate' },
+        { value: stats.matchesPlayed, label: 'Total Matches' },
         { value: stats.currentStreak.count > 0 ? stats.currentStreak.count + stats.currentStreak.type : '—', label: 'Current Streak' },
-        { value: stats.bestStreak > 0 ? stats.bestStreak + 'W' : '—', label: 'Best Streak' }
       ];
 
       tiles.forEach(function(tile) {

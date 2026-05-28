@@ -154,6 +154,12 @@
         <!-- ELO Rankings Tab -->
         <div id="tab-elo" class="tab-content active">
           <div class="card">
+            <div class="card-header" style="justify-content: flex-end; padding-bottom: 0; border-bottom: none;">
+              <div class="toggle-group" style="margin-bottom: 0;">
+                <button type="button" class="toggle active" id="ranking-type-doubles" data-type="doubles">Doubles</button>
+                <button type="button" class="toggle" id="ranking-type-singles" data-type="singles">Singles</button>
+              </div>
+            </div>
             <div class="table-responsive">
               <table class="data-table" id="elo-table">
                 <thead>
@@ -354,8 +360,8 @@
               <div class="player-detail-info">
                 <h2 id="detail-name" class="player-detail-name"></h2>
                 <div class="player-detail-badges">
-                  <span class="badge badge-elo" id="detail-elo">1200 ELO</span>
-                  <span class="badge badge-rank" id="detail-rank">#—</span>
+                  <span class="badge badge-elo" id="detail-elo-doubles">1500 Doubles</span>
+                  <span class="badge badge-elo" id="detail-elo-singles">1500 Singles</span>
                 </div>
               </div>
             </div>

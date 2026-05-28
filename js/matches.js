@@ -11,6 +11,23 @@ DV.Matches = (function() {
   var matchListeners = [];
   var unsubscribe = null;
 
+  function getEmptyPlayerStats() {
+    return {
+      eloDoubles: DV.DEFAULT_ELO, eloSingles: DV.DEFAULT_ELO,
+      winsDoubles: 0, lossesDoubles: 0, matchesPlayedDoubles: 0,
+      winsSingles: 0, lossesSingles: 0, matchesPlayedSingles: 0,
+      wins: 0, losses: 0, matchesPlayed: 0
+    };
+  }
+
+  function getStatsForMatchType(playerData, matchType) {
+    var isSingles = matchType === 'singles';
+    return {
+      elo: isSingles ? (playerData.eloSingles !== undefined ? playerData.eloSingles : DV.DEFAULT_ELO) : (playerData.eloDoubles !== undefined ? playerData.eloDoubles : DV.DEFAULT_ELO),
+      matchesPlayed: isSingles ? (playerData.matchesPlayedSingles || 0) : (playerData.matchesPlayedDoubles || 0)
+    };
+  }
+
   /**
    * Initialize real-time listener for matches
    */
@@ -43,13 +60,13 @@ DV.Matches = (function() {
     // Get current player ELOs
     return getPlayerElos().then(function(playerElos) {
       // Extract ELO values for calculation
-      var simpleElos = {};
+      var matchStats = {};
       Object.keys(playerElos).forEach(function(pid) {
-        simpleElos[pid] = playerElos[pid].elo;
+        matchStats[pid] = getStatsForMatchType(playerElos[pid], matchData.type);
       });
 
       // Calculate ELO changes
-      var eloChanges = DV.Elo.calculateMatchElo(matchData, simpleElos);
+      var eloChanges = DV.Elo.calculateMatchElo(matchData, matchStats);
 
       var match = {
         type: matchData.type,
@@ -77,20 +94,30 @@ DV.Matches = (function() {
           ? matchData.team1.indexOf(playerId) >= 0
           : matchData.team2.indexOf(playerId) >= 0;
 
-        var currentStats = playerElos[playerId] || { elo: DV.DEFAULT_ELO, wins: 0, losses: 0, matchesPlayed: 0 };
-        var newElo = currentStats.elo + (eloChanges[playerId] || 0);
-        var newWins = currentStats.wins + (isWinner ? 1 : 0);
-        var newLosses = currentStats.losses + (isWinner ? 0 : 1);
-        var newMatchesPlayed = currentStats.matchesPlayed + 1;
+        var currentStats = playerElos[playerId] || getEmptyPlayerStats();
+        var change = eloChanges[playerId] || 0;
+        
+        var updateObj = { lastMatch: firebase.firestore.FieldValue.serverTimestamp() };
+        if (matchData.type === 'singles') {
+           updateObj.eloSingles = (currentStats.eloSingles !== undefined ? currentStats.eloSingles : DV.DEFAULT_ELO) + change;
+           updateObj.winsSingles = (currentStats.winsSingles || 0) + (isWinner ? 1 : 0);
+           updateObj.lossesSingles = (currentStats.lossesSingles || 0) + (isWinner ? 0 : 1);
+           updateObj.matchesPlayedSingles = (currentStats.matchesPlayedSingles || 0) + 1;
+        } else {
+           updateObj.eloDoubles = (currentStats.eloDoubles !== undefined ? currentStats.eloDoubles : DV.DEFAULT_ELO) + change;
+           updateObj.winsDoubles = (currentStats.winsDoubles || 0) + (isWinner ? 1 : 0);
+           updateObj.lossesDoubles = (currentStats.lossesDoubles || 0) + (isWinner ? 0 : 1);
+           updateObj.matchesPlayedDoubles = (currentStats.matchesPlayedDoubles || 0) + 1;
+        }
 
-        batch.set(playerRef, {
-          name: DV.getPlayerName(playerId),
-          elo: newElo,
-          wins: newWins,
-          losses: newLosses,
-          matchesPlayed: newMatchesPlayed,
-          lastMatch: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
+        updateObj.wins = (currentStats.wins || 0) + (isWinner ? 1 : 0);
+        updateObj.losses = (currentStats.losses || 0) + (isWinner ? 0 : 1);
+        updateObj.matchesPlayed = (currentStats.matchesPlayed || 0) + 1;
+        
+        // Also write name if missing
+        updateObj.name = DV.getPlayerName(playerId);
+
+        batch.set(playerRef, updateObj, { merge: true });
       });
 
       return batch.commit().then(function() {
@@ -106,17 +133,19 @@ DV.Matches = (function() {
     return DV.db.collection('players').get().then(function(snapshot) {
       var elos = {};
       DV.PLAYERS.forEach(function(p) {
-        elos[p.id] = {
-          elo: DV.DEFAULT_ELO,
-          wins: 0,
-          losses: 0,
-          matchesPlayed: 0
-        };
+        elos[p.id] = getEmptyPlayerStats();
       });
       snapshot.forEach(function(doc) {
         var data = doc.data();
         elos[doc.id] = {
-          elo: data.elo !== undefined ? data.elo : DV.DEFAULT_ELO,
+          eloDoubles: data.eloDoubles !== undefined ? data.eloDoubles : (data.elo !== undefined ? data.elo : DV.DEFAULT_ELO),
+          eloSingles: data.eloSingles !== undefined ? data.eloSingles : DV.DEFAULT_ELO,
+          winsDoubles: data.winsDoubles || 0,
+          lossesDoubles: data.lossesDoubles || 0,
+          matchesPlayedDoubles: data.matchesPlayedDoubles || 0,
+          winsSingles: data.winsSingles || 0,
+          lossesSingles: data.lossesSingles || 0,
+          matchesPlayedSingles: data.matchesPlayedSingles || 0,
           wins: data.wins !== undefined ? data.wins : 0,
           losses: data.losses !== undefined ? data.losses : 0,
           matchesPlayed: data.matchesPlayed !== undefined ? data.matchesPlayed : 0
@@ -175,18 +204,27 @@ DV.Matches = (function() {
             ? matchData.team1.indexOf(playerId) >= 0
             : matchData.team2.indexOf(playerId) >= 0;
 
-          var currentStats = playerElos[playerId] || { elo: DV.DEFAULT_ELO, wins: 0, losses: 0, matchesPlayed: 0 };
-          var newElo = currentStats.elo - (eloChanges[playerId] || 0);
-          var newWins = Math.max(0, currentStats.wins - (isWinner ? 1 : 0));
-          var newLosses = Math.max(0, currentStats.losses - (isWinner ? 0 : 1));
-          var newMatchesPlayed = Math.max(0, currentStats.matchesPlayed - 1);
+          var currentStats = playerElos[playerId] || getEmptyPlayerStats();
+          var change = eloChanges[playerId] || 0;
 
-          batch.set(playerRef, {
-            elo: newElo,
-            wins: newWins,
-            losses: newLosses,
-            matchesPlayed: newMatchesPlayed
-          }, { merge: true });
+          var updateObj = {};
+          if (matchData.type === 'singles') {
+             updateObj.eloSingles = (currentStats.eloSingles !== undefined ? currentStats.eloSingles : DV.DEFAULT_ELO) - change;
+             updateObj.winsSingles = Math.max(0, (currentStats.winsSingles || 0) - (isWinner ? 1 : 0));
+             updateObj.lossesSingles = Math.max(0, (currentStats.lossesSingles || 0) - (isWinner ? 0 : 1));
+             updateObj.matchesPlayedSingles = Math.max(0, (currentStats.matchesPlayedSingles || 0) - 1);
+          } else {
+             updateObj.eloDoubles = (currentStats.eloDoubles !== undefined ? currentStats.eloDoubles : DV.DEFAULT_ELO) - change;
+             updateObj.winsDoubles = Math.max(0, (currentStats.winsDoubles || 0) - (isWinner ? 1 : 0));
+             updateObj.lossesDoubles = Math.max(0, (currentStats.lossesDoubles || 0) - (isWinner ? 0 : 1));
+             updateObj.matchesPlayedDoubles = Math.max(0, (currentStats.matchesPlayedDoubles || 0) - 1);
+          }
+          
+          updateObj.wins = Math.max(0, (currentStats.wins || 0) - (isWinner ? 1 : 0));
+          updateObj.losses = Math.max(0, (currentStats.losses || 0) - (isWinner ? 0 : 1));
+          updateObj.matchesPlayed = Math.max(0, (currentStats.matchesPlayed || 0) - 1);
+
+          batch.set(playerRef, updateObj, { merge: true });
         });
 
         return batch.commit();
@@ -211,23 +249,18 @@ DV.Matches = (function() {
 
         var playersData = {};
         DV.PLAYERS.forEach(function(p) {
-          playersData[p.id] = {
-            elo: DV.DEFAULT_ELO,
-            wins: 0,
-            losses: 0,
-            matchesPlayed: 0
-          };
+          playersData[p.id] = getEmptyPlayerStats();
         });
 
         var batch = DV.db.batch();
 
         matches.forEach(function(match) {
-          var currentElos = {};
+          var matchStats = {};
           Object.keys(playersData).forEach(function(pid) {
-            currentElos[pid] = playersData[pid].elo;
+            matchStats[pid] = getStatsForMatchType(playersData[pid], match.type);
           });
 
-          var newChanges = DV.Elo.calculateMatchElo(match, currentElos);
+          var newChanges = DV.Elo.calculateMatchElo(match, matchStats);
 
           var matchRef = DV.db.collection('matches').doc(match.id);
           batch.update(matchRef, { eloChanges: newChanges });
@@ -239,10 +272,22 @@ DV.Matches = (function() {
               : match.team2.indexOf(playerId) >= 0;
 
             if (!playersData[playerId]) {
-              playersData[playerId] = { elo: DV.DEFAULT_ELO, wins: 0, losses: 0, matchesPlayed: 0 };
+              playersData[playerId] = getEmptyPlayerStats();
             }
 
-            playersData[playerId].elo += (newChanges[playerId] || 0);
+            var change = newChanges[playerId] || 0;
+            if (match.type === 'singles') {
+               playersData[playerId].eloSingles += change;
+               playersData[playerId].winsSingles += (isWinner ? 1 : 0);
+               playersData[playerId].lossesSingles += (isWinner ? 0 : 1);
+               playersData[playerId].matchesPlayedSingles += 1;
+            } else {
+               playersData[playerId].eloDoubles += change;
+               playersData[playerId].winsDoubles += (isWinner ? 1 : 0);
+               playersData[playerId].lossesDoubles += (isWinner ? 0 : 1);
+               playersData[playerId].matchesPlayedDoubles += 1;
+            }
+            
             playersData[playerId].wins += (isWinner ? 1 : 0);
             playersData[playerId].losses += (isWinner ? 0 : 1);
             playersData[playerId].matchesPlayed += 1;
@@ -251,12 +296,20 @@ DV.Matches = (function() {
 
         Object.keys(playersData).forEach(function(playerId) {
           var playerRef = DV.db.collection('players').doc(playerId);
+          var pd = playersData[playerId];
           batch.set(playerRef, {
             name: DV.getPlayerName(playerId),
-            elo: playersData[playerId].elo,
-            wins: playersData[playerId].wins,
-            losses: playersData[playerId].losses,
-            matchesPlayed: playersData[playerId].matchesPlayed
+            eloDoubles: pd.eloDoubles,
+            eloSingles: pd.eloSingles,
+            winsDoubles: pd.winsDoubles,
+            lossesDoubles: pd.lossesDoubles,
+            matchesPlayedDoubles: pd.matchesPlayedDoubles,
+            winsSingles: pd.winsSingles,
+            lossesSingles: pd.lossesSingles,
+            matchesPlayedSingles: pd.matchesPlayedSingles,
+            wins: pd.wins,
+            losses: pd.losses,
+            matchesPlayed: pd.matchesPlayed
           }, { merge: true });
         });
 

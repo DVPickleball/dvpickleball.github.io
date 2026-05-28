@@ -7,7 +7,35 @@ window.DV = window.DV || {};
 
 DV.Elo = (function() {
 
-  var K_FACTOR = 32;
+  /**
+   * Determine dynamic K-Factor based on player stats
+   */
+  function getKFactor(matchesPlayed, elo) {
+    if (matchesPlayed < 20) return 50;
+    if (matchesPlayed >= 50 && elo >= 1800) return 16;
+    return 24;
+  }
+
+  /**
+   * Calculate point differential multiplier based on match scores
+   */
+  function getMarginMultiplier(scores) {
+    if (!scores || scores.length === 0) return 1;
+    
+    var t1Points = 0;
+    var t2Points = 0;
+    
+    scores.forEach(function(game) {
+      t1Points += (game.team1 || 0);
+      t2Points += (game.team2 || 0);
+    });
+    
+    var diff = Math.abs(t1Points - t2Points);
+    var multiplier = 1 + (0.05 * diff);
+    
+    // Cap at 1.5x
+    return Math.min(1.5, multiplier);
+  }
 
   /**
    * Calculate expected score (probability of winning)
@@ -26,29 +54,25 @@ DV.Elo = (function() {
    * @param {number} actualScore - 1 for win, 0 for loss
    * @returns {number} New rating (rounded)
    */
-  function newRating(currentRating, expected, actual) {
-    return Math.round(currentRating + K_FACTOR * (actual - expected));
+  function newRating(currentRating, expected, actual, kFactor, marginMultiplier) {
+    kFactor = kFactor || 24;
+    marginMultiplier = marginMultiplier || 1;
+    return Math.round(currentRating + (kFactor * marginMultiplier * (actual - expected)));
   }
 
   /**
    * Calculate ELO changes for a match
    *
-   * For doubles: team ELO = average of both players
-   * Each player gains/loses individually based on team performance
-   *
    * @param {Object} match - Match data
-   * @param {string[]} match.team1 - Array of player IDs for team 1
-   * @param {string[]} match.team2 - Array of player IDs for team 2
-   * @param {string} match.winner - 'team1' or 'team2'
-   * @param {Object} playerElos - Map of playerId -> current ELO
+   * @param {Object} playerStats - Map of playerId -> { elo, matchesPlayed }
    * @returns {Object} Map of playerId -> ELO change (+ or -)
    */
-  function calculateMatchElo(match, playerElos) {
+  function calculateMatchElo(match, playerStats) {
     var changes = {};
 
     // Calculate team average ELOs
-    var team1Elo = averageElo(match.team1, playerElos);
-    var team2Elo = averageElo(match.team2, playerElos);
+    var team1Elo = averageElo(match.team1, playerStats);
+    var team2Elo = averageElo(match.team2, playerStats);
 
     // Expected scores
     var expectedTeam1 = expectedScore(team1Elo, team2Elo);
@@ -57,17 +81,28 @@ DV.Elo = (function() {
     // Actual scores
     var actualTeam1 = match.winner === 'team1' ? 1 : 0;
     var actualTeam2 = match.winner === 'team2' ? 1 : 0;
+    
+    // Margin Multiplier
+    var marginMultiplier = getMarginMultiplier(match.scores);
 
     // Calculate individual changes
     match.team1.forEach(function(playerId) {
-      var currentElo = playerElos[playerId] || DV.DEFAULT_ELO;
-      var newElo = newRating(currentElo, expectedTeam1, actualTeam1);
+      var stats = playerStats[playerId] || {};
+      var currentElo = stats.elo !== undefined ? stats.elo : DV.DEFAULT_ELO;
+      var matchesPlayed = stats.matchesPlayed || 0;
+      var kFactor = getKFactor(matchesPlayed, currentElo);
+      
+      var newElo = newRating(currentElo, expectedTeam1, actualTeam1, kFactor, marginMultiplier);
       changes[playerId] = newElo - currentElo;
     });
 
     match.team2.forEach(function(playerId) {
-      var currentElo = playerElos[playerId] || DV.DEFAULT_ELO;
-      var newElo = newRating(currentElo, expectedTeam2, actualTeam2);
+      var stats = playerStats[playerId] || {};
+      var currentElo = stats.elo !== undefined ? stats.elo : DV.DEFAULT_ELO;
+      var matchesPlayed = stats.matchesPlayed || 0;
+      var kFactor = getKFactor(matchesPlayed, currentElo);
+
+      var newElo = newRating(currentElo, expectedTeam2, actualTeam2, kFactor, marginMultiplier);
       changes[playerId] = newElo - currentElo;
     });
 
@@ -77,11 +112,12 @@ DV.Elo = (function() {
   /**
    * Get average ELO for a team
    */
-  function averageElo(team, playerElos) {
+  function averageElo(team, playerStats) {
     if (!team || team.length === 0) return DV.DEFAULT_ELO;
     var total = 0;
     team.forEach(function(id) {
-      total += (playerElos[id] || DV.DEFAULT_ELO);
+      var stats = playerStats[id] || {};
+      total += (stats.elo !== undefined ? stats.elo : DV.DEFAULT_ELO);
     });
     return total / team.length;
   }
@@ -93,19 +129,21 @@ DV.Elo = (function() {
    * @returns {Object} Map of playerId -> final ELO
    */
   function recalculateAll(matches) {
-    var elos = {};
+    var stats = {};
     DV.PLAYERS.forEach(function(p) {
-      elos[p.id] = DV.DEFAULT_ELO;
+      stats[p.id] = { elo: DV.DEFAULT_ELO, matchesPlayed: 0 };
     });
 
     matches.forEach(function(match) {
-      var changes = calculateMatchElo(match, elos);
+      var changes = calculateMatchElo(match, stats);
       Object.keys(changes).forEach(function(pid) {
-        elos[pid] = (elos[pid] || DV.DEFAULT_ELO) + changes[pid];
+        if (!stats[pid]) stats[pid] = { elo: DV.DEFAULT_ELO, matchesPlayed: 0 };
+        stats[pid].elo += changes[pid];
+        stats[pid].matchesPlayed += 1;
       });
     });
 
-    return elos;
+    return stats;
   }
 
   // Public API
@@ -114,7 +152,8 @@ DV.Elo = (function() {
     newRating: newRating,
     calculateMatchElo: calculateMatchElo,
     recalculateAll: recalculateAll,
-    K_FACTOR: K_FACTOR
+    getKFactor: getKFactor,
+    getMarginMultiplier: getMarginMultiplier
   };
 
 })();
